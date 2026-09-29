@@ -85,7 +85,8 @@ module Latch::Uploader
       metadata : MetadataHash? = nil,
       **options
     ) : {{ stored_file }}
-      data = extract_metadata(uploaded_file, metadata, **options)
+      puts "options in upload: #{options.inspect}"
+    data = extract_metadata(uploaded_file, metadata, **options)
       data = data.merge(metadata) if metadata
       location = options[:location]? || generate_location(uploaded_file, data, **options)
 
@@ -103,6 +104,7 @@ module Latch::Uploader
       uploaded_file : Latch::UploadedFile,
       **options
     ) : {{ stored_file }}
+    puts "options in cache: #{options.inspect}"
       new(self.storages[:cache]).upload(uploaded_file, **options)
     end
 
@@ -339,6 +341,45 @@ module Latch::Uploader
     basename = generate_uid(uploaded_file, metadata, **options)
     filename = extension ? "#{basename}.#{extension}" : basename
     File.join([options[:path_prefix]?, filename].compact)
+  end
+
+  # Macro to call verify_custom_options_required, as such
+  # ```
+  # def generate_location(uploaded_file, metadata, **options) : String
+  #   verify_custom_options_required_many(
+  #     options,
+  #     path_prefix: String,
+  #     listing_id: String,
+  #     position: String
+  #   ) do
+  #     extension = file_extension(uploaded_file, metadata)
+  #     basename = generate_uid(uploaded_file, metadata, **options)
+  #     filename = extension ? "#{basename}.#{extension}" : basename
+  #     path = File.join([path_prefix, listing_id, position, filename].compact)
+  #     path
+  #   end
+  # end
+  # ```
+  macro verify_custom_options_required_many(options, **required, &block)
+  {% for key, type in required %}
+    {{key.id}} =
+      verify_custom_options_required(
+        :{{key}},
+        {{type}},
+        **{{options}}
+      )
+  {% end %}
+  {{block.body}}
+  end
+
+  # Call from inside custom generate_location to verify NamedTuple[:key] (options) is present
+  # def generate_location(uploaded_file, metadata, **options) : String
+  #   product_id = verify_custom_options_required(:product_id, String, **options)
+  #   File.join(product_id, super)
+  # end
+  def verify_custom_options_required(key, type : T.class, **options) : T forall T
+    options[key]?.try(&.as(T)) ||
+      raise ArgumentError.new("missing required option: #{key}")
   end
 
   # Generates a unique identifier for file locations. Override this in

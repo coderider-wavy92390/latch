@@ -176,6 +176,52 @@ struct ImageUploader
 end
 ```
 
+### Pass custom options to generate_location override
+# src/operations/save_marketplace_listing_image.cr
+```crystal
+class SaveMarketplaceListingImage < MarketplaceListingImage::SaveOperation
+  permit_columns marketplace_listing_id, position
+  attach image, process: true, listing_id: marketplace_listing_id.value.to_s, position: position.value.to_s
+
+  before_save :run_validations
+
+  private def run_validations
+    validate_required marketplace_listing_id, position
+
+    validate_file_size_of image, max: 5_000_000
+    validate_file_mime_type_of image,
+      in: %w[image/png image/jpeg image/webp]
+  end
+end
+```
+
+# src/uploader/marketplace_listing_image_uploader.cr
+```crystal
+struct MarketplaceListingImageUploader
+  include Latch::Uploader
+  process image, using: MarketplaceListingImageProcessor
+
+  def generate_location(
+    uploaded_file,
+    metadata,
+    **options,
+  ) : String
+    verify_custom_options_required_many(
+      options,
+      path_prefix: String,
+      listing_id: String,
+      position: String
+    ) do
+      extension = file_extension(uploaded_file, metadata)
+      basename = generate_uid(uploaded_file, metadata, **options)
+      filename = extension ? "#{basename}.#{extension}" : basename
+      path = File.join([path_prefix, listing_id, position, filename].compact)
+      path
+    end
+  end
+end
+```
+
 ### Custom storage keys
 
 By default, uploaders use `"cache"` and `"store"`. Override with the
