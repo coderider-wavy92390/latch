@@ -213,8 +213,7 @@ struct MarketplaceListingImageUploader
       position: String
     ) do
       extension = file_extension(uploaded_file, metadata)
-      basename = generate_uid(uploaded_file, metadata, **options)
-      filename = extension ? "#{basename}.#{extension}" : basename
+      filename = "image.#{extension}"
       path = File.join([path_prefix, listing_id, position, filename].compact)
       path
     end
