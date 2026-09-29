@@ -154,7 +154,6 @@ module Latch::Avram::SaveOperation
       end
 
       record_id = record.{{ T.constant(:PRIMARY_KEY_NAME).id }}.to_s
-      prefix = T::ATTACHMENT_PREFIX_{{ name.stringify.upcase.id }}.gsub(/:id/, record_id)
       stored = T::ATTACHMENT_UPLOADER_{{ name.stringify.upcase.id }}.promote(
         cached,
         location: cached.id
