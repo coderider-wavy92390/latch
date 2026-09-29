@@ -598,6 +598,45 @@ module MyQualityProcessor
 end
 ```
 
+Use the Bool constant NESTED_VARIANTS in your processors to determine whether or not to dump the output all in one folder.
+
+
+# Example false
+```
+└> tree
+.
+├── cache
+└── marketplace_listing_image
+    ├── 10c6289c-2aea-421b-ae8c-cb81b2bcd1e2
+    │   ├── 1
+    │   │   ├── image.jpg
+    │   │   └── image_thumb.jpg
+    │   ├── 2
+    │   │   ├── image.jpg
+    │   │   └── image_thumb.jpg
+    │   ├── 3
+    │   │   ├── image.jpg
+    │   │   └── image_thumb.jpg
+    │   └── 4
+    │       ├── image.jpg
+    │       └── image_thumb.jpg
+```
+
+## Change variant image location (nested or not or not)
+```crystal
+struct MarketplaceListingImageProcessor
+  include Latch::Processor::Magick
+
+  NESTED_VARIANTS = false
+
+  original resize: "2000x2000>", strip: true, quality: 85
+  variant thumb,
+    resize: "500x500^",
+    gravity: "center",
+    quality: 80
+end
+```
+
 ## Storage backends
 
 ### FileSystem
