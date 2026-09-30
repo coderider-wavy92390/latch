@@ -196,6 +196,8 @@ module Latch::Uploader
       variant_names = using.resolve.constants
         .select(&.starts_with?("VARIANT_"))
         .map { |const| using.resolve.constant(const) }
+
+      nested_variants = using.resolve.constant(:NESTED_VARIANTS)
     %}
 
     {% unless @type.has_constant?(:HAS_PROCESSORS) %}
@@ -214,7 +216,7 @@ module Latch::Uploader
       {% for variant_name in variant_names %}
         def {{ name }}_{{ variant_name.id }} : {{ @type }}::StoredFile
           {{ @type }}::StoredFile.new(
-            id: variant_location("{{ name }}_{{ variant_name.id }}"),
+            id: variant_location("{{ name }}_{{ variant_name.id }}", {{ nested_variants }}),
             storage_key: storage_key,
             metadata: Latch::MetadataHash.new,
           )
@@ -228,7 +230,7 @@ module Latch::Uploader
 
       def delete : Nil
         {% for variant_name in variant_names %}
-          storage.delete(variant_location("{{ name }}_{{ variant_name.id }}"))
+          storage.delete(variant_location("{{ name }}_{{ variant_name.id }}", {{ nested_variants }}))
         {% end %}
         previous_def
       end
